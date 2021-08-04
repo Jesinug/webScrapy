@@ -1,31 +1,90 @@
 const puppeteer = require('puppeteer');
 
-(async () => {
+const getReservationData = async () => {
+	try {
+    const browser = await puppeteer.launch();
+    const [page] = await browser.pages();
 
-    const browser = await puppeteer.launch({headless: false});
-    const page = await browser.newPage();
+		await page.goto(`https://www.book-secure.com/index.php?
+			s=results&
+			group=ascentral&
+			property=thphu18547&
+			arrival=2021-09-14&
+			departure=2021-09-21&
+			adults1=2&
+			children1=1&
+			childrenAges1=1&
+			locale=es_ES&
+			currency=EUR&
+			stid=9l48mtulr&
+			Clusternames=ascentral&
+			cluster=ascentral&
+			Hotelnames=Asia-Centara-Grand-Beach-Resort-Phuket&
+			hname=Asia-Centara-Grand-Beach-Resort-Phuket&
+			arrivalDateValue=2021-09-14&
+			frommonth=9&
+			fromday=14&
+			fromyear=2021&
+			nbdays=7&
+			nbNightsValue=7&
+			adulteresa=2&
+			nbAdultsValue=2&
+			enfantresa=1&
+			nbChildrenValue=1&
+			redir=BIZ-so5523q0o4&
+			rt=1628103401`, { waitUntil: 'networkidle2' });
     
-    await page.goto('https://reservations.travelclick.com/110426?datein=11/16/2020&dateout=11/17/2020&identifier=&_ga=2.57257386.1267432369.1605552753-2004099546.1603909283#/accommodation/room', {waitUntil: 'networkidle2'});
-    await page.click('#promoInfo .btn-promo');
-    await page.screenshot({path: 'screenshot1.jpg'})
+		const data = await page.evaluate(() => {
+			const checkIn = document.querySelector('#fb-qs-summary-dates-arrival .fb-date').dataset.date;
+			const checkOut = document.querySelector('#fb-qs-summary-dates-departure .fb-date').dataset.date;
+			const adults = Number(document.querySelector('#fb-qs-summary-rooms-adults span').dataset.mode);
+			const children = Number(document.querySelector('#fb-qs-summary-rooms-children span').dataset.mode);
+			const numberOfRooms = Number(document.querySelector('#fb-qs-summary-rooms-quantity span').innerText.split(' ')[0]);
+			const totalGuests = adults + children
+			const currency = document.querySelector('#fb-headbar-block-currency .fb-headbar-value').innerText.match(/\(([^)]+)\)/)[1];
+			const language = document.documentElement.lang;
+			const numberOfNights = (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 3600 * 24);
+			
 
-})();
+			const results = document.querySelectorAll('#results-items .fb-results-accommodation')
+			const prices = [];
+				
+			for (let index = 0; index < results.length; index++) {
+				const roomPrices = [...results[index].querySelectorAll('.new-price .fb-price')].map(elem => Number(elem.dataset.price))
+				prices.push(...roomPrices)
+			}
 
+			const minimunPrice = Math.min(...prices)
 
+			return {
+				checkIn,
+				checkOut,
+				adults,
+				children,
+				numberOfRooms,
+				totalGuests,
+				currency,
+				language,
+				numberOfNights,
+				minimunPrice,
+			}
+    });
+		await browser.close();
 
-    /**try {
-        
-        console.log("Opening the browser......");
-
-
-        
-    } catch (err) {
-        console.log("Could not create a browser instance => : ", err);
+    return data;
+    } catch (e) {
+     return e;
     }
-
-    return browser;
 }
 
-module.exports = {
-    startBrowser
-};*/
+
+getReservationData()
+	.then(result => {
+		console.log(result)
+	})
+	.catch((e) => {
+		console.log(e)
+	})
+
+
+    
