@@ -54,7 +54,7 @@ const getReservationData = async () => {
 				prices.push(...roomPrices)
 			}
 
-			const minimunPrice = Math.min(...prices)
+			const minimumPrice = Math.min(...prices)
 
 			return {
 				checkIn,
@@ -66,7 +66,7 @@ const getReservationData = async () => {
 				currency,
 				language,
 				numberOfNights,
-				minimunPrice,
+				minimumPrice,
 			}
     });
 		await browser.close();
